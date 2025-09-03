@@ -1,2 +1,1 @@
-# university-3sem
-Homeworks from 3d semester.
+## Домашняя работа 1: Параллельное умножение матриц
