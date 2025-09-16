@@ -57,11 +57,13 @@ public static class MatrixMultiplier
         var threads = new Thread[actualThreadCount];
 
         var rowsPerThread = rowsA / actualThreadCount;
+        var remainingRows = rowsA % actualThreadCount;
 
         for (var t = 0; t < actualThreadCount; t++)
         {
-            var start = t * rowsPerThread;
-            var end = Math.Min(start + rowsPerThread, rowsA);
+            var start = (t * rowsPerThread) + Math.Min(t, remainingRows);
+            var rowsForThisThread = rowsPerThread + (t < remainingRows ? 1 : 0);
+            var end = start + rowsForThisThread;
 
             threads[t] = new Thread(() => MultiplyRowRange(matrixA, matrixB, result, start, end));
             threads[t].Start();

@@ -1,4 +1,4 @@
-﻿// <copyright file="MatrixMultiplierTests.cs" author="Alina Letyagina">
+﻿// <copyright file="MultiplicationTests.cs" author="Alina Letyagina">
 // under MIT License.
 // </copyright>
 
