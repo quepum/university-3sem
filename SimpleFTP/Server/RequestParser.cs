@@ -1,4 +1,4 @@
-﻿// <copyright file="Program.cs" author="Alina Letyagina">
+﻿// <copyright file="RequestParser.cs" author="Alina Letyagina">
 // under MIT License.
 // </copyright>
 
