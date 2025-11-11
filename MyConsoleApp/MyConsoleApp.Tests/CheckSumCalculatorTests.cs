@@ -50,7 +50,7 @@ public class CheckSumCalculatorTests
         Directory.CreateDirectory(empty);
 
         var hash1 = await CheckSumCalculator.ComputeCheckSumAsync(empty);
-        var hash2 = await CheckSumCalculator.ComputeCheckSumAsync(empty);
+        var hash2 = await CheckSumCalculator.ComputeCheckSumParallelAsync(empty);
 
         Assert.That(hash1, Is.EqualTo(hash2));
     }
