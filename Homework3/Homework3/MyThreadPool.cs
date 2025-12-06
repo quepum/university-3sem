@@ -1,4 +1,8 @@
-﻿namespace Homework3;
+﻿// <copyright file="MyThreadPool.cs" author="Alina Letyagina">
+// under MIT License.
+// </copyright>
+
+namespace Homework3;
 
 using System;
 using System.Collections.Concurrent;
@@ -84,17 +88,14 @@ public sealed class MyThreadPool : IDisposable
         }
     }
 
-    internal CancellationToken ShutdownToken => this.shutdownCts.Token;
-
     internal void EnqueueContinuation(Action continuation)
     {
-        this.ThrowIfDisposed();
         this.workQueue.Enqueue(new WorkItem(continuation));
     }
 
     private void WorkerLoop()
     {
-        while (!this.shutdownCts.Token.IsCancellationRequested)
+        while (!this.shutdownCts.Token.IsCancellationRequested || !this.workQueue.IsEmpty)
         {
             if (this.workQueue.TryDequeue(out var workItem))
             {

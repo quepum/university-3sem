@@ -1,4 +1,8 @@
-﻿namespace Homework3;
+﻿// <copyright file="MyTask.cs" author="Alina Letyagina">
+// under MIT License.
+// </copyright>
+
+namespace Homework3;
 
 using System;
 using System.Collections.Generic;
@@ -12,13 +16,13 @@ internal sealed class MyTask<TResult> : IMyTask<TResult>
 {
     private readonly Func<TResult> work;
     private readonly MyThreadPool pool;
-    private readonly Lock syncRoot = new Lock();
+    private readonly Lock syncRoot = new();
     private readonly ManualResetEventSlim completionEvent = new ManualResetEventSlim(false);
 
     private bool isCompleted;
-    private TResult result;
-    private Exception exception;
-    private List<Action> continuations;
+    private TResult result = default!;
+    private Exception exception = null!;
+    private List<Action> continuations = null!;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MyTask{TResult}"/> class.
@@ -117,10 +121,7 @@ internal sealed class MyTask<TResult> : IMyTask<TResult>
             {
                 foreach (var cont in continuationsToRun)
                 {
-                    if (!this.pool.ShutdownToken.IsCancellationRequested)
-                    {
-                        this.pool.EnqueueContinuation(cont);
-                    }
+                    this.pool.EnqueueContinuation(cont);
                 }
             }
         }

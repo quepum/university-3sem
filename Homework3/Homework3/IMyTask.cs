@@ -1,10 +1,14 @@
-﻿namespace Homework3;
+﻿// <copyright file="IMyTask.cs" author="Alina Letyagina">
+// under MIT License.
+// </copyright>
+
+namespace Homework3;
 
 /// <summary>
 /// Represents an operation that produces a result of type <typeparamref name="TResult"/>.
 /// </summary>
 /// <typeparam name="TResult">The type of the result produced by the task.</typeparam>
-public interface IMyTask<TResult>
+public interface IMyTask<out TResult>
 {
     /// <summary>
     /// Gets a value indicating whether the task has completed.

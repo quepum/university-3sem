@@ -93,7 +93,7 @@ public class MyThreadPoolTests
     [Test]
     public void Shutdown_WaitsForAllSubmittedTasksToComplete()
     {
-        var task1 = this.pool.Submit(() => 
+        var task1 = this.pool.Submit(() =>
         {
             Thread.Sleep(10);
             return 1;
