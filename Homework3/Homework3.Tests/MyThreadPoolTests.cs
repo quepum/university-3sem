@@ -1,41 +1,38 @@
-﻿namespace Homework3.Tests;
+﻿// <copyright file="MyThreadPoolTests.cs" author="Alina Letyagina">
+// under MIT License.
+// </copyright>
 
+namespace Homework3.Tests;
+
+using System.Threading;
+using NUnit.Framework;
+
+[TestFixture]
 public class MyThreadPoolTests
 {
-    private MyThreadPool pool;
-
-    [SetUp]
-    public void SetUp()
-    {
-        this.pool = new MyThreadPool(4);
-    }
-
-    [TearDown]
-    public void TearDown()
-    {
-        this.pool?.Dispose();
-    }
-
     [Test]
     public void Submit_ReturnsCorrectResult()
     {
-        var task = this.pool.Submit(() => 42);
+        using var pool = new MyThreadPool(2);
+        var task = pool.Submit(() => 42);
         Assert.That(task.Result, Is.EqualTo(42));
     }
 
     [Test]
     public void Submit_StringTask_ReturnsCorrectResult()
     {
-        var task = this.pool.Submit(() => "hello");
+        using var pool = new MyThreadPool(2);
+        var task = pool.Submit(() => "hello");
         Assert.That(task.Result, Is.EqualTo("hello"));
     }
 
     [Test]
     public void ContinueWith_ChainsCorrectly()
     {
-        var task = this.pool.Submit(() => 5)
-                       .ContinueWith(x => x * 3)
-                       .ContinueWith(x => x.ToString());
+        using var pool = new MyThreadPool(2);
+        var task = pool.Submit(() => 5)
+            .ContinueWith(x => x * 3)
+            .ContinueWith(x => x.ToString());
 
         Assert.That(task.Result, Is.EqualTo("15"));
     }
@@ -43,17 +40,20 @@ public class MyThreadPoolTests
     [Test]
     public void ExceptionInTask_ThrowsAggregateException()
     {
-        var task = this.pool.Submit<int>(() => throw new InvalidOperationException("Oops"));
+        using var pool = new MyThreadPool(1);
+        var task = pool.Submit<int>(() => throw new InvalidOperationException("Oops"));
 
         var ex = Assert.Throws<AggregateException>(() => _ = task.Result);
         Assert.That(ex.InnerException, Is.InstanceOf<InvalidOperationException>());
-        Assert.That(ex.InnerException!.Message, Is.EqualTo("Oops"));
+        Assert.That(ex.InnerException.Message, Is.EqualTo("Oops"));
     }
 
     [Test]
     public void MultipleTasks_ExecuteConcurrently()
     {
         const int taskCount = 8;
+        using var pool = new MyThreadPool(4);
+
         var tasks = new IMyTask<int>[taskCount];
         var started = 0;
         var completed = 0;
@@ -61,15 +61,14 @@ public class MyThreadPoolTests
 
         for (var i = 0; i < taskCount; i++)
         {
-            tasks[i] = this.pool.Submit(() =>
+            tasks[i] = pool.Submit(() =>
             {
                 lock (lockObj)
                 {
                     started++;
                 }
 
-                Thread.Sleep(20);
-
+                Thread.Sleep(1); // минимальная задержка
                 lock (lockObj)
                 {
                     completed++;
@@ -93,18 +92,20 @@ public class MyThreadPoolTests
     [Test]
     public void Shutdown_WaitsForAllSubmittedTasksToComplete()
     {
-        var task1 = this.pool.Submit(() =>
+        using var pool = new MyThreadPool(2);
+
+        var task1 = pool.Submit(() =>
         {
-            Thread.Sleep(10);
+            Thread.Sleep(1);
             return 1;
         });
-        var task2 = this.pool.Submit(() =>
+        var task2 = pool.Submit(() =>
         {
-            Thread.Sleep(10);
+            Thread.Sleep(1);
             return 2;
         });
 
-        this.pool.Shutdown();
+        pool.Shutdown();
 
         Assert.Multiple(() =>
         {
@@ -116,31 +117,31 @@ public class MyThreadPoolTests
     [Test]
     public void Submit_AfterShutdown_ThrowsObjectDisposedException()
     {
-        this.pool.Shutdown();
-
-        Assert.Throws<ObjectDisposedException>(() => this.pool.Submit(() => 42));
+        using var pool = new MyThreadPool(2);
+        pool.Shutdown();
+        Assert.Throws<ObjectDisposedException>(() => pool.Submit(() => 42));
     }
 
     [Test]
     public void ContinueWith_AfterTaskCompletion_SchedulesOnPool()
     {
-        var task = this.pool.Submit(() => 100);
+        using var pool = new MyThreadPool(2);
+        var task = pool.Submit(() => 100);
         var cont = task.ContinueWith(x => x + 1);
-
         Assert.That(cont.Result, Is.EqualTo(101));
     }
 
     [Test]
     public void ContinueWith_BeforeTaskCompletion_WorksCorrectly()
     {
-        var task = this.pool.Submit(() =>
+        using var pool = new MyThreadPool(2);
+        var task = pool.Submit(() =>
         {
-            Thread.Sleep(30);
+            Thread.Sleep(10);
             return 999;
         });
 
         var cont = task.ContinueWith(x => x.ToString());
-
         Assert.That(cont.Result, Is.EqualTo("999"));
     }
 
@@ -148,7 +149,7 @@ public class MyThreadPoolTests
     public void PoolUsesExactlyNThreads()
     {
         const int threadCount = 3;
-        using var localPool = new MyThreadPool(threadCount);
+        using var pool = new MyThreadPool(threadCount);
 
         var activeThreads = 0;
         var maxActiveThreads = 0;
@@ -159,7 +160,7 @@ public class MyThreadPoolTests
 
         for (var i = 0; i < taskCount; i++)
         {
-            tasks[i] = localPool.Submit(() =>
+            tasks[i] = pool.Submit(() =>
             {
                 lock (lockObj)
                 {
@@ -170,7 +171,7 @@ public class MyThreadPoolTests
                     }
                 }
 
-                Thread.Sleep(20);
+                Thread.Sleep(10);
 
                 lock (lockObj)
                 {

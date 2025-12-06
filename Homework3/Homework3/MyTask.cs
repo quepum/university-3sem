@@ -17,12 +17,12 @@ internal sealed class MyTask<TResult> : IMyTask<TResult>
     private readonly Func<TResult> work;
     private readonly MyThreadPool pool;
     private readonly Lock syncRoot = new();
-    private readonly ManualResetEventSlim completionEvent = new ManualResetEventSlim(false);
+    private readonly ManualResetEventSlim completionEvent = new(false);
 
     private bool isCompleted;
-    private TResult result = default!;
-    private Exception exception = null!;
-    private List<Action> continuations = null!;
+    private TResult? result;
+    private Exception? exception;
+    private List<Action>? continuations;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MyTask{TResult}"/> class.
@@ -60,7 +60,7 @@ internal sealed class MyTask<TResult> : IMyTask<TResult>
                     throw new AggregateException(this.exception);
                 }
 
-                return this.result;
+                return this.result!;
             }
         }
     }
