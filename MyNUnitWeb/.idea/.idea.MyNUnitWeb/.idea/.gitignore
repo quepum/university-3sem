@@ -1,0 +1,40 @@
+﻿# ============= JetBrains Rider =============
+# Default ignored files
+/shelf/
+/workspace.xml
+# Rider ignored files
+/modules.xml
+/contentModel.xml
+/projectSettingsUpdater.xml
+/.idea.*.iml
+# Editor-based HTTP Client requests
+/httpRequests/
+# Datasource local storage ignored files
+/dataSources/
+/dataSources.local.xml
+
+# ============= .NET =============
+# Build results
+bin/
+obj/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.cache
+*.dotnet
+
+# ============= ASP.NET Core =============
+# Local DB (SQLite)
+App_Data/
+# Uploaded files (test assemblies)
+Uploads/
+
+# ============= OS =============
+# macOS
+.DS_Store
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
