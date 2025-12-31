@@ -1,0 +1,95 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "MyNUnit Web Runner";
+}
+
+<div class="container mt-4">
+    <h2>MyNUnit Web Runner</h2>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <input type="file" id="fileInput" multiple accept=".dll,.exe" class="form-control" />
+            <button id="uploadBtn" class="btn btn-primary mt-2">Загрузить</button>
+            <button id="runBtn" class="btn btn-success mt-2 ms-2" disabled>Начать тестирование</button>
+            <div id="uploadStatus" class="mt-2 text-success"></div>
+        </div>
+    </div>
+
+    <h4>Test Run History</h4>
+    <div id="historyContainer"></div>
+
+    <div id="resultsContainer" class="mt-4"></div>
+</div>
+
+@section Scripts {
+    <script>
+        let uploadId = null;
+
+        document.getElementById('uploadBtn').addEventListener('click', async () => {
+            const files = document.getElementById('fileInput').files;
+            if (files.length === 0) return;
+
+            const formData = new FormData();
+            for (let file of files) formData.append('files', file);
+
+            const res = await fetch('/api/testruns/upload', { method: 'POST', body: formData });
+            if (res.ok) {
+                const data = await res.json();
+                uploadId = data.uploadId;
+                document.getElementById('runBtn').disabled = false;
+                document.getElementById('uploadStatus').innerText = 'Upload successful!';
+            }
+        });
+
+        document.getElementById('runBtn').addEventListener('click', async () => {
+            const res = await fetch(`/api/testruns/run/${uploadId}`, { method: 'POST' });
+            if (res.ok) {
+                loadHistory();
+                document.getElementById('uploadStatus').innerText = 'Testing completed!';
+            }
+        });
+
+        async function loadHistory() {
+            const res = await fetch('/api/testruns');
+            const runs = await res.json();
+            let html = `<table class="table table-striped"><thead><tr>
+                <th>Started</th><th>Total</th><th>Passed</th><th>Failed</th><th>Ignored</th><th>Action</th>
+            </tr></thead><tbody>`;
+            for (let run of runs) {
+                html += `<tr>
+                    <td>${new Date(run.startedAt).toLocaleString()}</td>
+                    <td>${run.total}</td>
+                    <td>${run.passed}</td>
+                    <td>${run.failed}</td>
+                    <td>${run.ignored}</td>
+                    <td><button class="btn btn-sm btn-outline-primary" onclick="loadResults(${run.id})">View</button></td>
+                </tr>`;
+            }
+            html += '</tbody></table>';
+            document.getElementById('historyContainer').innerHTML = html;
+        }
+
+        async function loadResults(runId) {
+            const res = await fetch(`/api/testruns/${runId}`);
+            const run = await res.json();
+            let html = `<h5>Results for Run #${runId}</h5><table class="table table-sm"><thead><tr>
+                <th>Test</th><th>Status</th><th>Time (ms)</th><th>Details</th>
+            </tr></thead><tbody>`;
+            for (let r of run.results) {
+                const status = r.isIgnored ? 'Ignored' : r.isSuccess ? 'Passed' : 'Failed';
+                const details = r.ignoreReason || (r.errorMessage ? r.errorMessage.substring(0,80)+'...' : '');
+                html += `<tr>
+                    <td>${r.testName}</td>
+                    <td>${status}</td>
+                    <td>${r.durationMs}</td>
+                    <td>${details}</td>
+                </tr>`;
+            }
+            html += '</tbody></table>';
+            document.getElementById('resultsContainer').innerHTML = html;
+        }
+
+        loadHistory();
+    </script>
+}
