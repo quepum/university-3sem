@@ -10,7 +10,7 @@ using System.Text;
 /// <summary>
 /// Sends formatted responses to the client for "list" and "get" commands.
 /// </summary>
-public static class ResponseWriter
+internal static class ResponseWriter
 {
     /// <summary>
     /// Sends a list of files and folders in the given directory.
@@ -18,14 +18,15 @@ public static class ResponseWriter
     /// </summary>
     /// <param name="stream">The network stream to write the response to.</param>
     /// <param name="path">The directory path to list.</param>
+    /// <param name="ct">A cancellation token that can be used to cancel the operation.</param>
     /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
-    public static async Task SendListResponseAsync(Stream stream, string path)
+    public static async Task SendListResponseAsync(Stream stream, string path, CancellationToken ct = default)
     {
         try
         {
             if (!Directory.Exists(path))
             {
-                await WriteText(stream, "-1\n");
+                await WriteTextAsync(stream, "-1\n", ct);
                 return;
             }
 
@@ -41,11 +42,11 @@ public static class ResponseWriter
             }
 
             var response = string.Join(" ", parts) + "\n";
-            await WriteText(stream, response);
+            await WriteTextAsync(stream, response, ct);
         }
         catch
         {
-            await WriteText(stream, "-1\n");
+            await WriteTextAsync(stream, "-1\n", ct);
         }
     }
 
@@ -54,34 +55,34 @@ public static class ResponseWriter
     /// </summary>
     /// <param name="stream">The network stream to write the response to.</param>
     /// <param name="path">The path to the file to send.</param>
+    /// <param name="ct">A cancellation token that can be used to cancel the operation.</param>
     /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
-    public static async Task SendGetResponseAsync(Stream stream, string path)
+    public static async Task SendGetResponseAsync(Stream stream, string path, CancellationToken ct = default)
     {
         try
         {
             if (!File.Exists(path))
             {
-                await WriteText(stream, "-1");
+                await WriteTextAsync(stream, "-1", ct);
                 return;
             }
 
-            var content = await File.ReadAllBytesAsync(path);
-            var sizeStr = content.Length.ToString();
+            var fi = new FileInfo(path);
+            var header = Encoding.UTF8.GetBytes(fi.Length + " ");
+            await stream.WriteAsync(header, ct);
 
-            var header = Encoding.UTF8.GetBytes(sizeStr + " ");
-
-            await stream.WriteAsync(header);
-            await stream.WriteAsync(content);
+            await using var fileStream = File.OpenRead(path);
+            await fileStream.CopyToAsync(stream, ct);
         }
         catch
         {
-            await WriteText(stream, "-1");
+            await WriteTextAsync(stream, "-1", ct);
         }
     }
 
-    private static async Task WriteText(Stream stream, string text)
+    private static async Task WriteTextAsync(Stream stream, string text, CancellationToken ct = default)
     {
         var bytes = Encoding.UTF8.GetBytes(text);
-        await stream.WriteAsync(bytes);
+        await stream.WriteAsync(bytes, ct);
     }
 }

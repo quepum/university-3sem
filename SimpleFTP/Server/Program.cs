@@ -2,33 +2,29 @@
 // under MIT License.
 // </copyright>
 
-namespace SimpleFTP;
+using SimpleFTP;
 
-/// <summary>
-/// The main program class for the FTP server.
-/// </summary>
-internal static class Program
+const int defaultPort = 8888;
+
+var port = args.Length > 0 && int.TryParse(args[0], out var p) ? p : defaultPort;
+
+using var cts = new CancellationTokenSource();
+
+Console.CancelKeyPress += (_, e) =>
 {
-    private const int Port = 8888;
+    Console.WriteLine("\n[Server] Shutting down...");
+    e.Cancel = true;
+    cts.Cancel();
+};
 
-    /// <summary>
-    /// The entry point of the server application.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
-    public static async Task Main()
-    {
-        using var cts = new CancellationTokenSource();
-
-        Console.CancelKeyPress += (_, e) =>
-        {
-            Console.WriteLine("[Server] Shutting down...");
-            e.Cancel = true;
-            cts.Cancel();
-        };
-
-        var server = new FtpServer(port: Port);
-        await server.StartAsync(cts.Token);
-
-        Console.WriteLine("[Server] Stopped.");
-    }
+try
+{
+    var server = new FtpServer(port);
+    await server.StartAsync(cts.Token);
 }
+catch (Exception ex)
+{
+    Console.WriteLine($"[Server] ERROR: {ex.Message}");
+}
+
+Console.WriteLine("[Server] Stopped.");

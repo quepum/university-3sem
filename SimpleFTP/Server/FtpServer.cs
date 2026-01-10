@@ -13,6 +13,7 @@ using System.Net.Sockets;
 public class FtpServer(int port)
 {
     private readonly TcpListener listener = new(IPAddress.Any, port);
+    private readonly List<Task> activeTasks = [];
 
     /// <summary>
     /// Starts the server and accepts incoming client connections.
@@ -23,6 +24,7 @@ public class FtpServer(int port)
     {
         this.listener.Start();
         Console.WriteLine($"Listening on port {port}...");
+
         try
         {
             while (!ct.IsCancellationRequested)
@@ -30,7 +32,12 @@ public class FtpServer(int port)
                 try
                 {
                     var client = await this.listener.AcceptTcpClientAsync(ct);
-                    _ = Task.Run(() => HandleClientAsync(client), ct);
+                    var task = Task.Run(() => HandleClientAsync(client, ct), ct);
+                    lock (this.activeTasks)
+                    {
+                        this.activeTasks.Add(task);
+                        this.activeTasks.RemoveAll(t => t.IsCompleted);
+                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -41,21 +48,41 @@ public class FtpServer(int port)
         finally
         {
             this.listener.Stop();
-            Console.WriteLine("[Server] Listener stopped.");
+            Console.WriteLine("[Server] Listener stopped. Waiting for active clients...");
+
+            Task[] tasksToWait;
+            lock (this.activeTasks)
+            {
+                tasksToWait = this.activeTasks.ToArray();
+            }
+
+            if (tasksToWait.Length > 0)
+            {
+                try
+                {
+                    await Task.WhenAll(tasksToWait).WaitAsync(TimeSpan.FromSeconds(5), ct);
+                }
+                catch (TimeoutException)
+                {
+                    Console.WriteLine("[Server] Timeout while waiting for clients to finish.");
+                }
+            }
+
+            Console.WriteLine("[Server] All clients finished.");
         }
     }
 
-    private static async Task HandleClientAsync(TcpClient client)
+    private static async Task HandleClientAsync(TcpClient client, CancellationToken ct)
     {
         try
         {
             using (client)
             {
                 using var stream = client.GetStream();
-                await ClientRequestHandler.ProcessRequestAsync(stream);
+                await ClientRequestHandler.ProcessRequestAsync(stream, ct);
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (!ct.IsCancellationRequested)
         {
             Console.WriteLine($"[Server] ERROR: {ex.Message}");
         }

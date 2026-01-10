@@ -9,18 +9,17 @@ using System.Text;
 /// <summary>
 /// Handles incoming client requests and calls the appropriate response method.
 /// </summary>
-public static class ClientRequestHandler
+internal static class ClientRequestHandler
 {
     /// <summary>
     /// Reads a request from the client stream and sends a response.
     /// </summary>
     /// <param name="stream">The network stream connected to the client.</param>
     /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
-    public static async Task ProcessRequestAsync(Stream stream)
+    public static async Task ProcessRequestAsync(Stream stream, CancellationToken ct = default)
     {
         using var reader = new StreamReader(stream, Encoding.UTF8);
-        var line = await reader.ReadLineAsync();
-
+        var line = await reader.ReadLineAsync(ct);
         if (string.IsNullOrWhiteSpace(line))
         {
             return;
@@ -32,13 +31,13 @@ public static class ClientRequestHandler
             return;
         }
 
-        switch (request.Command)
+        switch (request.Value.Command)
         {
             case "1":
-                await ResponseWriter.SendListResponseAsync(stream, request.Path);
+                await ResponseWriter.SendListResponseAsync(stream, request.Value.Path, ct);
                 break;
             case "2":
-                await ResponseWriter.SendGetResponseAsync(stream, request.Path);
+                await ResponseWriter.SendGetResponseAsync(stream, request.Value.Path, ct);
                 break;
         }
     }
