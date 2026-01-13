@@ -18,7 +18,7 @@ public class TestRunner
     /// Initializes a new instance of the <see cref="TestRunner"/> class.
     /// </summary>
     /// <param name="path">The path to the directory containing test assemblies (.dll or .exe).</param>
-    public TestRunner(string path)
+    public TestRunner(string? path)
     {
         this.dirPath = path ?? throw new ArgumentNullException(nameof(path));
         if (!Directory.Exists(this.dirPath))
@@ -135,7 +135,7 @@ public class TestRunner
     /// Discovers and runs all test methods in managed assemblies and returns results.
     /// </summary>
     /// <returns>A list of <see cref="ResultModel"/> objects representing the outcome of each test.</returns>
-    private List<ResultModel> RunAndGetResults()
+    public List<ResultModel> RunAndGetResults()
     {
         var dllFiles = Directory.GetFiles(this.dirPath, "*.dll", SearchOption.TopDirectoryOnly);
         var exeFiles = Directory.GetFiles(this.dirPath, "*.exe", SearchOption.TopDirectoryOnly);
