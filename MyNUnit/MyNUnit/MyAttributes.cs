@@ -1,4 +1,8 @@
-﻿namespace MyNUnit;
+﻿// <copyright file="MyAttributes.cs" author="Alina Letyagina">
+// under MIT License.
+// </copyright>
+
+namespace MyNUnit;
 
 /// <summary>
 /// Marks a method as a test method.

@@ -1,4 +1,8 @@
-﻿namespace MyNUnit;
+﻿// <copyright file="ResultModel.cs" author="Alina Letyagina">
+// under MIT License.
+// </copyright>
+
+namespace MyNUnit;
 
 /// <summary>
 /// Represents the result of a single test execution.
